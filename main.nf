@@ -35,99 +35,72 @@ println "Output dir name: $params.output\u001B[0m"
 println " "}
 
 if (params.profile) { exit 1, "--profile is WRONG use -profile" }
-if (params.nano == '' &&  params.illumina == '' ) { exit 1, "input missing, use [--nano] or [--illumina]"}
+if (params.SRA == '') { exit 1, "input missing, use [--SRA]" }
 
 /************************** 
 * INPUT CHANNELS 
 **************************/
 
-// nanopore reads input & --list support
-if (params.nano && params.list) { nano_input_ch = Channel
-  .fromPath( params.nano, checkIfExists: true )
-  .splitCsv()
-  .map { row -> ["${row[0]}", file("${row[1]}", checkIfExists: true)] }
-  .view() }
-  else if (params.nano) { nano_input_ch = Channel
-    .fromPath( params.nano, checkIfExists: true)
-    .map { file -> tuple(file.baseName, file) }
-    .view()
-}
+/* Comment section:
+ SRA download approach
+ step 1: reading sample accession id's and sample ID
+ step 2: csv parsing via groovy syntax and feed accessions as list object into .fromSRA 
+  */
 
-// illumina reads input & --list support
-if (params.illumina && params.list) { illumina_input_ch = Channel
-  .fromPath( params.illumina, checkIfExists: true )
-  .splitCsv()
-  .map { row -> ["${row[0]}", [file("${row[1]}", checkIfExists: true), file("${row[2]}", checkIfExists: true)]] }
-  .view() }
-  else if (params.illumina) { illumina_input_ch = Channel
-  .fromFilePairs( params.illumina , checkIfExists: true )
-  .view() 
+// SRA input via csv
+if (params.SRA ) { 
+	sra_name_ch = Channel
+	.fromPath( params.SRA, checkIfExists: true )
+	.splitCsv()
+	.map { row -> [row[1], row[0]] }
+
+	def csvfile= new File(params.SRA);
+	accessionnumbers = [];
+	def lines = 0;
+	csvfile.splitEachLine(',') {
+	    def row = [];
+	    row = it;
+	    accessionnumbers << row[1];
+	    lines++
+	}
+	println "Processing a csv file with $lines accession numbers"
+ 
+  // this is currently using the API key from christian@nanozoo.org 
+	sra_file_ch = Channel
+	  .fromSRA(accessionnumbers, max: 4, apiKey:'66adfec576547c08451eadc56f9c98be4f09')
+
 }
 
 /************************** 
 * MODULES
 **************************/
 
-/* Comment section: */
-
-include './modules/get_db' params(cloudProcess: params.cloudProcess, cloudDatabase: params.cloudDatabase)
-include './modules/module1' params(output: params.output, variable1: params.variable1)
-include './modules/module2' params(output: params.output, variable2: params.variable2)
-
-
-/************************** 
-* DATABASES
-**************************/
-
-/* Comment section:
-The Database Section is designed to "auto-get" pre prepared databases.
-It is written for local use and cloud use via params.cloudProcess.
-*/
-
-workflow download_db {
-  main:
-    // local storage via storeDir
-    if (!params.cloudProcess) { example_db(); db = example_db.out }
-    // cloud storage via db_preload.exists()
-    if (params.cloudProcess) {
-      db_preload = file("${params.cloudDatabase}/test_db/Chlamydia_gallinacea_08_1274_3.ASM47102v2.dna.toplevel.fa.gz")
-      if (db_preload.exists()) { db = db_preload }
-      else  { example_db(); db = example_db.out } 
-    }
-  emit: db
-}
-
+include './modules/sra_download' params(output: params.output)
+include './modules/sra_staging' params(output: params.output)
 
 /************************** 
 * SUB WORKFLOWS
 **************************/
 
-/* Comment section: */
-
-workflow subworkflow_1 {
+workflow download_sra_wf {
   get: 
-    nano_input_ch
-    db
+    sra_name_ch
+    sra_file_ch
 
   main:
-    module2(module1(nano_input_ch, db))
+    sra_staging(sra_file_ch)
+
+    sra_channel = sra_name_ch.join(sra_staging.out)
+	    .map { tuple(it[1], it[2]) } // reordering the channel to [sampleID, file]
+
+    sra_download(sra_channel)
 } 
 
 /************************** 
 * WORKFLOW ENTRY POINT
 **************************/
 
-/* Comment section: */
-
-workflow {
-      download_db()
-      db = download_db.out
-      if (params.nano && !params.illumina) { 
-        subworkflow_1(nano_input_ch, db)
-      }
-}
-
-
+workflow { download_sra_wf(sra_name_ch, sra_file_ch) }
 
 /**************************  
 * --help
@@ -141,24 +114,20 @@ def helpMSG() {
     log.info """
     ____________________________________________________________________________________________
     
-    Workflow: Template
+    Workflow: Download single or paired reads via csv file from SRA
     
     ${c_yellow}Usage example:${c_reset}
-    nextflow run wf_template --nano '*/*.fastq' 
+    nextflow run wf_template --SRA '*.csv' 
 
     ${c_yellow}Input:${c_reset}
-    ${c_green} --nano ${c_reset}            '*.fasta' or '*.fastq.gz'   -> one sample per file
-    ${c_green} --illumina ${c_reset}        '*.R{1,2}.fastq.gz'         -> file pairs
-    ${c_dim}  ..change above input to csv:${c_reset} ${c_green}--list ${c_reset}            
+    ${c_green} --SRA ${c_reset}            '*.csv' or 'sample_list.csv' 
+    ${c_dim}   csv style: 
+       samplename1,accessionnumber1
+       samplename2,accessionnumber2 ${c_reset}      
 
     ${c_yellow}Options:${c_reset}
     --cores             max cores for local use [default: $params.cores]
-    --memory            max memory for local use [default: $params.memory]
     --output            name of the result folder [default: $params.output]
-
-    ${c_yellow}Parameters:${c_reset}
-    --variable1             a variable [default: $params.variable1]
-    --variable2             a variable [default: $params.variable2]
 
     ${c_dim}Nextflow options:
     -with-report rep.html    cpu / ram usage (may cause errors)

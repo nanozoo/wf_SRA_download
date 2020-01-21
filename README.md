@@ -1,4 +1,4 @@
-# Workflow template
+# Workflow SRA download
 
 ![](https://img.shields.io/badge/nextflow-19.10.0-brightgreen)
 ![](https://img.shields.io/badge/uses-docker-blue.svg)
@@ -6,11 +6,11 @@
 
 
 
-![](https://github.com/nanozoo/wf_template/workflows/Syntax_check/badge.svg)
+![](https://github.com/nanozoo/wf_SRA_download/workflows/Syntax_check/badge.svg)
 
-Maintainer: Martin
+Maintainer: Christian
 
-Email: martin@nanozoo.org
+Email: christian@nanozoo.org
 
 # Automated Syntax check Setup
 * First: for a new Workflow edit the badge in the Readme and replace `wf_template` with the new reponame
@@ -35,13 +35,12 @@ providers {
 
 # Input examples
 
-* **one** .fastq file per sample: `--nano 'sample1.fastq'`
-* paired end illumina: `--illumina 'S_41_17_Cf*.R{1,2}.fastq.gz'`
+* **one** .csv file 
 
 # Execution example
 
 ````
-nextflow run main.nf
+nextflow run main.nf 
 ````
 
 # Flowchart
