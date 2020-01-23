@@ -5,17 +5,11 @@
 ![](https://img.shields.io/badge/by-nanozoo-ff006c.svg)
 
 
-
 ![](https://github.com/nanozoo/wf_SRA_download/workflows/Syntax_check/badge.svg)
 
 Maintainer: Christian
 
 Email: christian@nanozoo.org
-
-# Automated Syntax check Setup
-* First: for a new Workflow edit the badge in the Readme and replace `wf_template` with the new reponame
-* Info: The file `.github/workflows/nextflow-test.yml` contains the script name e.g. `main.nf`, change this if you have another script name
-
 
 # Installation
 
@@ -33,15 +27,20 @@ providers {
         password = 'Personal API token'  } }
 ```
 
-# Input examples
-
-* **one** .csv file 
 
 # Execution example
 
 ````
-nextflow run main.nf 
+nextflow run main.nf --SRA SRA-example-input.csv
 ````
+
+# Example csv
+
+```csv
+ger04,ERR3656076
+ger03,ERR3656074
+ger01,ERR3654113
+```
 
 # Flowchart
 ![chart](figures/chart.png)
