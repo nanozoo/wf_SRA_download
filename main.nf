@@ -30,7 +30,7 @@ println "Workdir location:"
 println "  $workflow.workDir\u001B[0m"
 println " "
 if (workflow.profile == 'standard') {
-println "\033[2mCPUs to use: $params.cores"
+println "\033[2mParallel downloads: $params.parallel"
 println "Output dir name: $params.output\u001B[0m"
 println " "}
 
@@ -66,17 +66,21 @@ if (params.SRA ) {
 	println "Processing a csv file with $lines accession numbers"
  
   // this is currently using the API key from christian@nanozoo.org 
-	sra_file_ch = Channel
-	  .fromSRA(accessionnumbers, max: 4, apiKey:'66adfec576547c08451eadc56f9c98be4f09')
+	Channel
+	  .fromSRA(accessionnumbers, apiKey:'66adfec576547c08451eadc56f9c98be4f09')
+    .view()
+    .set{sra_file_ch}
 
+  sra_channel = sra_name_ch.join(sra_file_ch)
+	    .map { tuple(it[1], it[2]) }
 }
+
 
 /************************** 
 * MODULES
 **************************/
 
 include './modules/sra_download' params(output: params.output)
-include './modules/sra_staging' params(output: params.output)
 
 /************************** 
 * SUB WORKFLOWS
@@ -84,23 +88,20 @@ include './modules/sra_staging' params(output: params.output)
 
 workflow download_sra_wf {
   get: 
-    sra_name_ch
-    sra_file_ch
+    sra_channel
 
   main:
-    sra_staging(sra_file_ch)
-
-    sra_channel = sra_name_ch.join(sra_staging.out)
-	    .map { tuple(it[1], it[2]) } // reordering the channel to [sampleID, file]
-
     sra_download(sra_channel)
 } 
 
+ 
 /************************** 
 * WORKFLOW ENTRY POINT
 **************************/
 
-workflow { download_sra_wf(sra_name_ch, sra_file_ch) }
+workflow { 
+    if ( params.SRA ) { download_sra_wf(sra_channel) } 
+}
 
 /**************************  
 * --help
@@ -126,7 +127,7 @@ def helpMSG() {
        samplename2,accessionnumber2 ${c_reset}      
 
     ${c_yellow}Options:${c_reset}
-    --cores             max cores for local use [default: $params.cores]
+    --parallel          number of parallel ENA/NCBI downloads [default: $params.parallel]
     --output            name of the result folder [default: $params.output]
 
     ${c_dim}Nextflow options:

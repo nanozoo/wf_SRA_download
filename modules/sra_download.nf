@@ -2,15 +2,22 @@
 
 process sra_download {
   label 'ubuntu'
-  maxForks 1
-	publishDir "${params.output}/", mode: 'copy', pattern: "${name}/*.fastq.gz"
+  publishDir "${params.output}/", mode: 'copy', pattern: "${name}/*.fastq.gz"
+  maxForks 3
+  //errorStrategy { task.exitStatus in 1 ? 'retry' : 'terminate' }
 	input:
-		tuple val(name), file(reads) 
+		tuple val(name), val(reads) 
 	output:
-		tuple val(name), file(reads) 
+		tuple val(name), file("${name}/*.fastq.gz") 
 	script:
 	"""
+	wget ftp://ftp.sra.ebi.ac.uk${reads[0]} -T 20
+	wget ftp://ftp.sra.ebi.ac.uk${reads[1]} -T 20
+
+	gzip -t *.fastq.gz
+
 	mkdir ${name}
-	cp ${reads} ${name}/
+	mv *.fastq.gz ${name}/
 	"""
 }
+

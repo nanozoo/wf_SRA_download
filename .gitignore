@@ -7,3 +7,4 @@ data/
 .nextflow/
 results/
 centrifuge-cloud/
+SRA_fastq_download
