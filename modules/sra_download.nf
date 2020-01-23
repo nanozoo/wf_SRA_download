@@ -4,7 +4,7 @@ process sra_download {
   label 'ubuntu'
   publishDir "${params.output}/", mode: 'copy', pattern: "${name}/*.fastq.gz"
   maxForks 3
-  //errorStrategy { task.exitStatus in 1 ? 'retry' : 'terminate' }
+  errorStrategy { task.exitStatus in 1 ? 'retry' : 'terminate' }
 	input:
 		tuple val(name), val(reads) 
 	output:
