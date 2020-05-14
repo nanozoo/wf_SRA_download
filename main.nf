@@ -67,7 +67,7 @@ if (params.SRA ) {
  
   // this is currently using the API key from christian@nanozoo.org 
 	Channel
-	  .fromSRA(accessionnumbers, apiKey:'66adfec576547c08451eadc56f9c98be4f09')
+	  .fromSRA(accessionnumbers, apiKey:params.token.toString())
     .view()
     .set{sra_file_ch}
 
