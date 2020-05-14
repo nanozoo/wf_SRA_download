@@ -68,7 +68,7 @@ if (params.SRA ) {
   // this is currently using the API key from christian@nanozoo.org 
 	Channel
 	  .fromSRA(accessionnumbers, apiKey:params.token.toString())
-    .view()
+    //.view()
     .set{sra_file_ch}
 
   sra_channel = sra_name_ch.join(sra_file_ch)
@@ -91,6 +91,7 @@ workflow download_sra_wf {
     sra_channel
 
   main:
+    sra_channel.view()
     sra_download(sra_channel)
 } 
 
