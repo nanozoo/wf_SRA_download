@@ -80,14 +80,14 @@ if (params.SRA ) {
 * MODULES
 **************************/
 
-include './modules/sra_download' params(output: params.output)
+include sra_download from './modules/sra_download' 
 
 /************************** 
 * SUB WORKFLOWS
 **************************/
 
 workflow download_sra_wf {
-  get: 
+  take: 
     sra_channel
 
   main:
