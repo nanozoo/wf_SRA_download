@@ -11,8 +11,9 @@ process sra_download {
 		tuple val(name), file("${name}/*.fastq.gz") 
 	script:
 	"""
-	wget ftp://ftp.sra.ebi.ac.uk${reads[0]} -T 20
-	wget ftp://ftp.sra.ebi.ac.uk${reads[1]} -T 20
+	for ID in \$( echo "${reads}" | tr -d "[]," ); do
+		if [[ \${ID} == *".fastq.gz"* ]]; then wget ftp://ftp.sra.ebi.ac.uk\${ID} -T 20; fi
+	done
 
 	gzip -t *.fastq.gz
 
