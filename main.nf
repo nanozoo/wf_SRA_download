@@ -80,7 +80,7 @@ if (params.SRA ) {
 * MODULES
 **************************/
 
-include sra_download from './modules/sra_download' 
+include { sra_download } from './modules/sra_download' 
 
 /************************** 
 * SUB WORKFLOWS
