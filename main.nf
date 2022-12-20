@@ -119,7 +119,7 @@ def helpMSG() {
     Workflow: Download single or paired reads via csv file from SRA
     
     ${c_yellow}Usage example:${c_reset}
-    nextflow run wf_template --SRA '*.csv' 
+    nextflow run nanozoo/wf_SRA_download --SRA '*.csv' 
 
     ${c_yellow}Input:${c_reset}
     ${c_green} --SRA ${c_reset}            '*.csv' or 'sample_list.csv' 
