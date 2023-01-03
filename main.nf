@@ -63,18 +63,24 @@ if (params.SRA ) {
 	    accessionnumbers << row[1];
 	    lines++
 	}
-	println "Processing a csv file with $lines accession numbers"
- 
+
+    // Error logging
+    error_ch = sra_name_ch.branch {
+        err: it[0].contains("ERR")
+        ers: it[0].contains("ERS")
+        }
+
+    error_ch.err.ifEmpty{ log.info "\033[0;33mCould not find ERR numbers in your csv file! ERS numbers wont work.\033[0m"}
+    //error_ch.ers.ifEmpty{ log.info "\033[0;33mCould not find ERS numbers in your csv file\033[0m" }
+
+	log.info "Processing a csv file with $lines accession numbers"
+
   // this is currently using the API key from christian@nanozoo.org 
-	Channel
-	  .fromSRA(accessionnumbers, apiKey:params.token.toString())
-    //.view()
-    .set{sra_file_ch}
+	sra_file_ch = Channel.fromSRA(accessionnumbers, apiKey:params.token.toString())
 
-  sra_channel = sra_name_ch.join(sra_file_ch)
-	    .map { tuple(it[1], it[2]) }
+    sra_channel = sra_name_ch.join(sra_file_ch)
+            .map { tuple(it[1], it[2]) }
 }
-
 
 /************************** 
 * MODULES
